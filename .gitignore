@@ -1,3 +1,4 @@
 app.log
 database.db
-tmp/*
+tmp
+.env

@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"simple_api/config"
 	"simple_api/database"
 )
 
@@ -22,7 +23,8 @@ func main() {
 	// Database
 	database.InitDatabase()
 
-	port := os.Getenv("APP_PORT")
+	port := config.GetConfig().Web.Port
+
 	if port == "" {
 		port = "3000"
 	}
@@ -30,7 +32,7 @@ func main() {
 	// HTTP Server
 	r := Routes()
 
-	log.Println("Server started on port 3000.")
+	log.Println("Server started on port:", port)
 	err = http.ListenAndServe(":"+port, r)
 	if err != nil {
 		log.Printf("server error occured: %v", err)
