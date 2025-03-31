@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"simple_api/config"
+	"strings"
 )
 
 var token string
@@ -159,4 +160,21 @@ func GetOsuBeatmapSets(beatmapSetID int) (BeatmapSetResponse, error) {
 	}
 
 	return getRequest[BeatmapSetResponse](url, params)
+}
+
+func ExtractBeatmapSetIDFromURL(url string) string {
+	// Example URL: https://osu.ppy.sh/beatmapsets/123456#osu/123456
+	parts := strings.Split(strings.TrimPrefix(url, "https://"), "/")
+
+	if len(parts) < 3 {
+		return ""
+	}
+
+	// Check if the URL contains "beatmapsets"
+	if strings.Contains(parts[1], "beatmapsets") {
+		// Extract the beatmap set ID
+		beatmapSetID := strings.TrimPrefix(parts[2], "beatmapsets/")
+		return strings.Split(beatmapSetID, "#")[0]
+	}
+	return ""
 }

@@ -33,22 +33,42 @@ type BeatmapSetResponse struct {
 	UserID                int                  `json:"user_id"`
 	Video                 bool                 `json:"video"`
 	Beatmaps              []BeatmapResponse    `json:"beatmaps"`
-	Converts              []string             `json:"converts"`
+	Converts              []interface{}        `json:"converts"`
 	CurrentNominations    []NominationResponse `json:"current_nominations"`
 	CurrentUserAttributes string               `json:"current_user_attributes"`
-	Description           string               `json:"description"`
+	Description           DescriptionObject    `json:"description"`
 	Discussions           string               `json:"discussions"`
 	Events                string               `json:"events"`
-	Genre                 string               `json:"genre"`
+	Genre                 Genre                `json:"genre"`
 	HasFavourited         bool                 `json:"has_favourited"`
-	Language              string               `json:"language"`
+	Language              Language             `json:"language"`
 	Nominations           string               `json:"nominations"`
 	PackTags              []string             `json:"pack_tags"`
-	Ratings               string               `json:"ratings"`
-	RecentFavourites      string               `json:"recent_favourites"`
-	RelatedUsers          string               `json:"related_users"`
-	User                  string               `json:"user"`
+	Ratings               []int                `json:"ratings"`
+	RecentFavourites      []UserCompact        `json:"recent_favourites"`
+	RelatedUsers          []UserCompact        `json:"related_users"`
+	User                  UserCompact          `json:"user"`
 	TrackID               int                  `json:"track_id"`
+}
+
+type DescriptionObject struct {
+	Description string `json:"description"`
+}
+
+type Genre struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type Language struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type UserCompact struct {
+	ID        int    `json:"id"`
+	Username  string `json:"username"`
+	AvatarURL string `json:"avatar_url"`
 }
 
 /*
@@ -107,10 +127,10 @@ Nomination object
 See https://osu.ppy.sh/docs/index.html#nomination
 */
 type NominationResponse struct {
-	beatmapset_id 	integer
-	rulesets 	Ruleset[]
-	reset 	boolean
-	user_id 	integer
+	beatmapset_id int
+	rulesets      []Ruleset
+	reset         bool
+	user_id       int
 }
 
 /*
@@ -118,6 +138,6 @@ Ruleset object
 See https://osu.ppy.sh/docs/index.html#ruleset
 */
 type Ruleset struct {
-	Name string `json:"name"`
+	Name        string `json:"name"`
 	Description string `json:"description"`
 }
