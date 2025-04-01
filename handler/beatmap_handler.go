@@ -64,7 +64,7 @@ func InsertBeatmap(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	beatmap, error := utils.GetOsuBeatmapSets(setId)
+	beatmap_set, error := utils.GetOsuBeatmapSets(setId)
 	if error != nil {
 		http.Error(w, error.Error(), http.StatusInternalServerError)
 		return
@@ -73,10 +73,10 @@ func InsertBeatmap(w http.ResponseWriter, r *http.Request) {
 	// Create a new Beatmap object
 	newBeatmap := model.BeatmapSet{
 		BeatmapSetID: setId,
-		Artist:       beatmap.Artist,
-		Title:        beatmap.Title,
-		Mapper:       beatmap.Creator,
-		Description:  beatmap.Description.Description,
+		Artist:       beatmap_set.Artist,
+		Title:        beatmap_set.Title,
+		Mapper:       beatmap_set.Creator,
+		Description:  beatmap_set.Description.Description,
 	}
 
 	// Save the new beatmap to the database
@@ -87,5 +87,5 @@ func InsertBeatmap(w http.ResponseWriter, r *http.Request) {
 	}
 	// Return the created beatmap
 
-	jh.WriteMessageWithStatus(fmt.Sprintf("Beatmap encontrado: %s - %s by %s", beatmap.Artist, beatmap.Title, beatmap.Creator), http.StatusOK)
+	jh.WriteMessageWithStatus(fmt.Sprintf("Beatmap encontrado: %s - %s by %s", beatmap_set.Artist, beatmap_set.Title, beatmap_set.Creator), http.StatusOK)
 }
