@@ -1,11 +1,11 @@
 package handler
 
 import (
+	"beatmap_aggregator_api/database"
+	"beatmap_aggregator_api/model"
+	"beatmap_aggregator_api/utils"
 	"fmt"
 	"net/http"
-	"simple_api/database"
-	"simple_api/model"
-	"simple_api/utils"
 	"strconv"
 )
 
@@ -24,15 +24,15 @@ func GetBeatmaps(w http.ResponseWriter, r *http.Request) {
 	jh.WriteResponse(beatmaps)
 }
 
-func InsertBeatmap(w http.ResponseWriter, r *http.Request) {
-	type BodyParams struct {
-		URL string `json:"url"`
-	}
+type InsertBeatmapBodyParams struct {
+	URL string `json:"url"`
+}
 
+func InsertBeatmap(w http.ResponseWriter, r *http.Request) {
 	jh := utils.NewJsonHandler(w, r)
 	db := database.GetDatabase()
 
-	params := &BodyParams{}
+	params := &InsertBeatmapBodyParams{}
 	err := jh.ParseBody(params)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -44,7 +44,12 @@ func InsertBeatmap(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	beatmapSetId := utils.ExtractBeatmapSetIDFromURL(params.URL)
+	beatmapSetId, err := utils.ExtractBeatmapSetIDFromURL(params.URL)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	if beatmapSetId == "" {
 		http.Error(w, "Invalid URL", http.StatusBadRequest)
 		return
@@ -71,7 +76,7 @@ func InsertBeatmap(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create a new Beatmap object
-	newBeatmap := model.BeatmapSet{
+	newBeatmapSet := model.BeatmapSet{
 		BeatmapSetID: setId,
 		Artist:       beatmap_set.Artist,
 		Title:        beatmap_set.Title,
@@ -80,7 +85,7 @@ func InsertBeatmap(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save the new beatmap to the database
-	tx = db.Create(&newBeatmap)
+	tx = db.Create(&newBeatmapSet)
 	if tx.Error != nil {
 		http.Error(w, tx.Error.Error(), http.StatusInternalServerError)
 		return

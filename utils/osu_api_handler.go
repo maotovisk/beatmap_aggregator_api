@@ -1,147 +1,99 @@
 package utils
 
 import (
-	"bytes"
-	"encoding/json"
+	"beatmap_aggregator_api/config"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
-	"simple_api/config"
-	"strings"
+	"regexp"
+
+	"github.com/go-resty/resty/v2"
 )
 
 var token string
 
 func getToken() string {
 	config := config.GetConfig()
-
-	client_id := config.Osu.ClientID
-	client_secret := config.Osu.ClientSecret
-	grant_type := "client_credentials"
-	scope := "public"
-
-	client := &http.Client{}
-
-	requestBody := fmt.Sprintf("client_id=%s&client_secret=%s&grant_type=%s&scope=%s", client_id, client_secret, grant_type, scope)
-
-	req, err := http.NewRequest("POST", "https://osu.ppy.sh/oauth/token", bytes.NewBuffer([]byte(requestBody)))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
+	client := resty.New()
 
 	var tokenResponse TokenResponse
-	err = json.Unmarshal(body, &tokenResponse)
+
+	res, err := client.R().
+		SetFormData(map[string]string{
+			"client_id":     config.Osu.ClientID,
+			"client_secret": config.Osu.ClientSecret,
+			"grant_type":    "client_credentials",
+			"scope":         "public",
+		}).
+		SetHeader("Content-Type", "application/x-www-form-urlencoded").
+		SetHeader("Accept", "application/json").
+		SetResult(&tokenResponse).
+		Post("https://osu.ppy.sh/oauth/token")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		log.Fatalf("error: Code: %s", resp.Status)
-		log.Printf("error: Body: %s", string(body))
+	if res.StatusCode() != http.StatusOK {
+		log.Fatalf("error: Code: %s", res.Status())
+		log.Printf("error: Body: %s", res.Body())
 	}
 
 	return tokenResponse.AccessToken
 }
 
 func postRequest[T any](url string, requestBody any) (T, error) {
-	var bodyJson []byte
-	if requestBody != nil {
-		var err error
-		bodyJson, err = json.Marshal(requestBody)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	bodyBuffer := bytes.NewBuffer(bodyJson)
-
-	client := &http.Client{}
-	req, err := http.NewRequest("POST", url, bodyBuffer)
-	if err != nil {
-		log.Fatal(err)
-	}
+	var response T
+	client := resty.New()
 
 	if token == "" {
 		token = getToken()
 	}
 
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := client.Do(req)
+	res, err := client.R().
+		SetHeader("Authorization", "Bearer "+token).
+		SetHeader("Accept", "application/json").
+		SetHeader("Content-Type", "application/json").
+		SetBody(requestBody).
+		SetResult(&response).
+		Post(url)
 	if err != nil {
-		log.Fatal(err)
+		return response, err
 	}
 
-	defer resp.Body.Close()
-
-	var result T
-	err = json.NewDecoder(resp.Body).Decode(&result)
-	if err != nil {
-		log.Fatal(err)
+	if res.StatusCode() != http.StatusOK {
+		log.Printf("error: Code: %s", res.Status())
+		log.Printf("error: Body: %s", res.Body())
+		return response, fmt.Errorf("error: Code: %s", res.Status())
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		log.Fatalf("error: Code: %s", resp.Status)
-		log.Printf("error: Body: %s", io.ReadCloser(resp.Body))
-	}
-	return result, nil
+	return response, nil
 }
 
 func getRequest[T any](url string, params map[string]string) (T, error) {
-
-	if params != nil || len(params) > 0 {
-		url += "?"
-		for key, value := range params {
-			url += fmt.Sprintf("%s=%s&", key, value)
-		}
-	}
-
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+	var response T
+	client := resty.New()
 
 	if token == "" {
 		token = getToken()
 	}
 
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := client.Do(req)
+	res, err := client.R().
+		SetHeader("Authorization", "Bearer "+token).
+		SetHeader("Accept", "application/json").
+		SetQueryParams(params).
+		SetResult(&response).
+		Get(url)
 	if err != nil {
-		log.Fatal(err)
+		return response, err
 	}
 
-	defer resp.Body.Close()
-
-	var result T
-	err = json.NewDecoder(resp.Body).Decode(&result)
-	if err != nil {
-		log.Fatal(err)
+	if res.StatusCode() != http.StatusOK {
+		log.Printf("error: Code: %s", res.Status())
+		log.Printf("error: Body: %s", res.Body())
+		return response, fmt.Errorf("error: Code: %s", res.Status())
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		log.Fatalf("error: Code: %s", resp.Status)
-		log.Printf("error: Body: %s", io.ReadCloser(resp.Body))
-	}
-	return result, nil
+	return response, nil
 }
 
 func GetOsuBeatmap(beatmapID int) (BeatmapResponse, error) {
@@ -162,19 +114,14 @@ func GetOsuBeatmapSets(beatmapSetID int) (BeatmapSetResponse, error) {
 	return getRequest[BeatmapSetResponse](url, params)
 }
 
-func ExtractBeatmapSetIDFromURL(url string) string {
+func ExtractBeatmapSetIDFromURL(url string) (string, error) {
 	// Example URL: https://osu.ppy.sh/beatmapsets/123456#osu/123456
-	parts := strings.Split(strings.TrimPrefix(url, "https://"), "/")
+	beatmapRegex := regexp.MustCompile(`https://osu.ppy.sh/beatmapsets/(\d*)#.*/.*`)
 
-	if len(parts) < 3 {
-		return ""
+	matches := beatmapRegex.FindStringSubmatch(url)
+	if len(matches) != 2 {
+		return "", fmt.Errorf("couldn't parse the beatmap URL")
 	}
 
-	// Check if the URL contains "beatmapsets"
-	if strings.Contains(parts[1], "beatmapsets") {
-		// Extract the beatmap set ID
-		beatmapSetID := strings.TrimPrefix(parts[2], "beatmapsets/")
-		return strings.Split(beatmapSetID, "#")[0]
-	}
-	return ""
+	return matches[1], nil
 }

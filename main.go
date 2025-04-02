@@ -1,11 +1,11 @@
 package main
 
 import (
+	"beatmap_aggregator_api/config"
+	"beatmap_aggregator_api/database"
 	"log"
 	"net/http"
 	"os"
-	"simple_api/config"
-	"simple_api/database"
 )
 
 func main() {

@@ -1,9 +1,9 @@
 package database
 
 import (
+	"beatmap_aggregator_api/config"
+	"beatmap_aggregator_api/model"
 	"log"
-	"simple_api/config"
-	"simple_api/model"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

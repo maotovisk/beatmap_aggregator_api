@@ -1,7 +1,7 @@
 package main
 
 import (
-	"simple_api/handler"
+	"beatmap_aggregator_api/handler"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"

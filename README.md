@@ -1,7 +1,7 @@
 # Beatmap Aggregator API – Golang
 
-A lightweight API built to store osu! beatmaps in a SQLite database.  
-This serves as a boilerplate for future Go projects — and possibly a base for a frontend later on.  
+A lightweight API built to store osu! beatmaps in a SQLite database.
+This serves as a boilerplate for future Go projects — and possibly a base for a frontend later on.
 It's also my personal playground while learning and experimenting with Golang.
 
 ## Tech Stack
@@ -15,4 +15,5 @@ It's also my personal playground while learning and experimenting with Golang.
 
 - [x] **Add beatmaps** – `POST /beatmap` with a beatmap URL
 - [x] **List beatmapsets** – `GET /beatmap`
+- [ ] **Osu Oauth** – OAuth2 authentication (coming soon)
 - [ ] **JWT Authentication** – Basic token-based auth (coming soon)
